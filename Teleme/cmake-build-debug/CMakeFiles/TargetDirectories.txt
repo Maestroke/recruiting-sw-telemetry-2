@@ -1,0 +1,4 @@
+C:/Users/ASUS/Documents/GitHub/recruiting-sw-telemetry-2/Teleme/cmake-build-debug/CMakeFiles/mylib.dir
+C:/Users/ASUS/Documents/GitHub/recruiting-sw-telemetry-2/Teleme/cmake-build-debug/CMakeFiles/Teleme.dir
+C:/Users/ASUS/Documents/GitHub/recruiting-sw-telemetry-2/Teleme/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/ASUS/Documents/GitHub/recruiting-sw-telemetry-2/Teleme/cmake-build-debug/CMakeFiles/rebuild_cache.dir
