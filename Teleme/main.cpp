@@ -10,8 +10,6 @@ int line=0;
 int line_count=0;
 char message[20];
 string s;
-//string scstart="160#1021";
-//string scstop="160#102255";
 string scstart[5];
 string scstop[5];
 int i_start=0;
@@ -142,8 +140,11 @@ void idle_state(){
 
 void run_state(){
     string file_name;
-    struct tm *local = localtime(&now);
-    file_name= "..\\Log\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".log";
+    time_t data;
+    tm *local;
+    data=time(NULL);
+    local=localtime(&data);
+    file_name= "..\\Log\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".log";
     file = fopen(file_name.c_str(), "w");
 
     while(line<line_count){
@@ -151,7 +152,9 @@ void run_state(){
         can_receive(message);
         s=parse(message);
         cout<<s<<endl;
-        s=s+'\n';
+        data=time(NULL);
+        local=localtime(&data);
+        s="("+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+") "+s+'\n';
         fprintf(file, s.c_str());
 
         if(controllo_stop(s)){
