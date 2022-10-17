@@ -32,7 +32,7 @@ int open_can(const char* filepath){
     }
     fseek(can, 0, SEEK_SET);
 
-    return line_count;
+    return line_count;      //modifica effettuata per semplificare il lavoro da eseguire nel main
 }
 
 int can_receive(char message[MAX_CAN_MESSAGE_SIZE]){

@@ -8,21 +8,19 @@ extern "C"{
 }
 
 int line=0;
-int line_count=0;
+int line_count=0;           //veriabile utilizzata per sapere quante righe ha il file candump.log
 char message[20];
 string s;
-vector<string> scstart;
-vector<string> scstop;
-int i_start=0;
-int i_stop=0;
-time_t now;
+vector<string> scstart;     //vettore con i codici per passare allo stato Run
+vector<string> scstop;      //vettore con i codici per passare allo stato Stop
 FILE* file = NULL;
-vector<string> vID;
-vector<int> cID;
+vector<string> vID;         //vettore contenente tutti i diversi ID che appaiono in una sessione di Run
+vector<int> cID;            //vettore contenente i contatori per ciascun ID apparso in una sessione di Run
 
 void error_state();
+void run_state();
 
-void static_data(string s){
+void static_data(string s){     //Controllo ID per creare il file Static.csv in seguito
     int div;
 
     div=s.find( '#');
@@ -39,13 +37,13 @@ void static_data(string s){
     cID.push_back(1);
 }
 
-void static_compile(float mean_time){
+void static_compile(float mean_time){       //Creazione e compilazione file Static.csv
     string file_name;
     time_t data;
     tm *local;
     data=time(NULL);
     local=localtime(&data);
-    file_name= "..\\Static\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".csv";
+    file_name= "..\\Static\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".csv"; //Per creare un nome costantemente diverso uso Data e Ora di creazione come nome
     file = fopen(file_name.c_str(), "w");
 
     for(int i=0; i<vID.size(); i++){
@@ -54,9 +52,12 @@ void static_compile(float mean_time){
     }
 
     fclose(file);
+
+    vID.clear();
+    cID.clear();
 }
 
-void load_code(){
+void load_code(){       //Caricamento dei codici per passare tra Run state e Idle state da file salvato in locale
     char c;
     string t="";
 
@@ -68,7 +69,6 @@ void load_code(){
         }
         scstart.push_back(t);
         t="";
-        i_start++;
     }
     fclose(file);
 
@@ -80,12 +80,11 @@ void load_code(){
         }
         scstop.push_back(t);
         t="";
-        i_stop++;
     }
     fclose(file);
 }
 
-string parse(string s){
+string parse(string s){     //Funzione per convertire il messaggio
     short int ID;
     int div;
 
@@ -113,7 +112,7 @@ string parse(string s){
     }
 }
 
-int controllo_start(string s){
+int controllo_start(string s){  //Funzione per controllare se il messaggio è un messaggio di start
     int div;
 
     div=s.find( '#');
@@ -123,7 +122,7 @@ int controllo_start(string s){
     sID = s.substr(0, div);
     sPL = s.substr(div, s.length());
 
-    for(int i=0; i<i_start; i++){
+    for(int i=0; i<scstart.size(); i++){
         div=scstart[i].find( '#');
 
         sIDc = scstart[i].substr(0, div);
@@ -136,7 +135,7 @@ int controllo_start(string s){
     return 0;
 }
 
-int controllo_stop(string s){
+int controllo_stop(string s){   //Funzione per controllare se il messaggio è un messaggio di stop
     int div;
 
     div=s.find( '#');
@@ -146,7 +145,7 @@ int controllo_stop(string s){
     sID = s.substr(0, div);
     sPL = s.substr(div, s.length());
 
-    for(int i=0; i<i_stop; i++){
+    for(int i=0; i<scstop.size(); i++){
         div=scstop[i].find( '#');
 
         sIDc = scstop[i].substr(0, div);
@@ -159,29 +158,25 @@ int controllo_stop(string s){
     return 0;
 }
 
-void run_state();
-
-void idle_state(){
+void idle_state(){      //Funzione per gestire la macchina durante l'Idle state
     while(line<line_count){
         line++;
         can_receive(message);
         s=parse(message);
-        cout<<s<<endl;
 
         if(controllo_start(s)){
-            cout<<"Passagio a Run State\n";
             run_state();
         }
     }
 }
 
-void run_state(){
+void run_state(){       //Funzione per gestire la macchina durante il run state
     string file_name;
     time_t data, start;
     tm *local;
     start=data=time(NULL);
     local=localtime(&data);
-    file_name= "..\\Log\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".log";
+    file_name= "..\\Log\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".log";    //Per creare un nome costantemente diverso uso Data e Ora di creazione come nome
     file = fopen(file_name.c_str(), "w");
 
     bool c=true;
@@ -189,7 +184,6 @@ void run_state(){
         line++;
         can_receive(message);
         s=parse(message);
-        cout<<s<<endl;
         static_data(s);
         data=time(NULL);
         local=localtime(&data);
@@ -200,13 +194,12 @@ void run_state(){
             c=false;
         }
     }
-    cout<<"Passaggio a Idle State\n";
     fclose(file);
     static_compile(difftime(mktime(local),start));
     idle_state();
 }
 
-void error_state(){
+void error_state(){     //La macchina entra in questo stato quando si verifica un evento indesiderato, attualmente l'unico evento è la recezione di un Payload dispari
     cout<<"E' stato rivelato un errore!!!\n";
     cout<<"Arresto macchina";
     close_can();
@@ -216,7 +209,6 @@ void error_state(){
 int main(void){
     load_code();
     line_count=open_can("..\\candump.log");
-    cout<<line_count<<endl;
 
     idle_state();
     return 0;
