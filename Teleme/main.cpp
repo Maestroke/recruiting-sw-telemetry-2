@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 extern "C"{
@@ -10,14 +11,50 @@ int line=0;
 int line_count=0;
 char message[20];
 string s;
-string scstart[5];
-string scstop[5];
+vector<string> scstart;
+vector<string> scstop;
 int i_start=0;
 int i_stop=0;
 time_t now;
 FILE* file = NULL;
+vector<string> vID;
+vector<int> cID;
 
 void error_state();
+
+void static_data(string s){
+    int div;
+
+    div=s.find( '#');
+    string sID;
+    sID = s.substr(0, div);
+
+    for(int i=0; i<vID.size(); i++){
+        if(sID==vID[i]){
+            cID[i]++;
+            return;
+        }
+    }
+    vID.push_back(sID);
+    cID.push_back(1);
+}
+
+void static_compile(float mean_time){
+    string file_name;
+    time_t data;
+    tm *local;
+    data=time(NULL);
+    local=localtime(&data);
+    file_name= "..\\Static\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".csv";
+    file = fopen(file_name.c_str(), "w");
+
+    for(int i=0; i<vID.size(); i++){
+        s=vID[i]+";"+ to_string(cID[i])+";"+ to_string(mean_time/(float)cID[i])+"\n";
+        fprintf(file, s.c_str());
+    }
+
+    fclose(file);
+}
 
 void load_code(){
     char c;
@@ -29,7 +66,7 @@ void load_code(){
             t.push_back(c);
             c = fgetc(file);
         }
-        scstart[i_start] = t;
+        scstart.push_back(t);
         t="";
         i_start++;
     }
@@ -41,7 +78,7 @@ void load_code(){
             t.push_back(c);
             c = fgetc(file);
         }
-        scstop[i_stop] = t;
+        scstop.push_back(t);
         t="";
         i_stop++;
     }
@@ -50,7 +87,7 @@ void load_code(){
 
 string parse(string s){
     short int ID;
-    int Payload, div;
+    int div;
 
     div=s.find( '#');
     if((s.length()-div-1)%2==0){
@@ -140,29 +177,33 @@ void idle_state(){
 
 void run_state(){
     string file_name;
-    time_t data;
+    time_t data, start;
     tm *local;
-    data=time(NULL);
+    start=data=time(NULL);
     local=localtime(&data);
     file_name= "..\\Log\\"+to_string(local->tm_mday)+"-"+to_string(local->tm_mon+1)+"--"+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+".log";
     file = fopen(file_name.c_str(), "w");
 
-    while(line<line_count){
+    bool c=true;
+    while(line<line_count && c){
         line++;
         can_receive(message);
         s=parse(message);
         cout<<s<<endl;
+        static_data(s);
         data=time(NULL);
         local=localtime(&data);
         s="("+to_string(local->tm_hour)+"-"+to_string(local->tm_min)+"-"+to_string(local->tm_sec)+") "+s+'\n';
         fprintf(file, s.c_str());
 
         if(controllo_stop(s)){
-            cout<<"Passaggio a Idle State\n";
-            fclose(file);
-            idle_state();
+            c=false;
         }
     }
+    cout<<"Passaggio a Idle State\n";
+    fclose(file);
+    static_compile(difftime(mktime(local),start));
+    idle_state();
 }
 
 void error_state(){
