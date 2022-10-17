@@ -8,7 +8,7 @@ extern "C"{
 }
 
 int line=0;
-int line_count=0;           //veriabile utilizzata per sapere quante righe ha il file candump.log
+int line_count=0;           //variabile utilizzata per sapere quante righe ha il file candump.log
 char message[20];
 string s;
 vector<string> scstart;     //vettore con i codici per passare allo stato Run
